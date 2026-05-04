@@ -1,73 +1,49 @@
-# React + TypeScript + Vite
+🎙️ SoviaAI: Agentic Voice & CRM Automation
+The Bridge Between Voice Interactions and Automated Business Intelligence
+SoviaAI is a B2B Multi-tenant SaaS platform designed to automate high-volume voice interactions and integrate them directly into a CRM workflow. Built for modern enterprises (like educational institutes and service providers), it uses "Agentic AI" to handle calls, train on custom knowledge bases, and perform automated follow-ups via WhatsApp.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+💎 The Aesthetic: "Glassmorphism Enterprise"
+The UI is designed to feel premium and technical.
 
-Currently, two official plugins are available:
+Theme: Deep Charcoal backgrounds with Cyber Blue & Electric Emerald accents.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Visuals: Semi-transparent "Glass" panels with subtle blurs and metallic borders.
 
-## React Compiler
+Typography: Modern Sans-serif (Inter) for high-density data readability.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+🚀 Key Modules
+Command Center (Admin Dashboard): Real-time analytics on AI performance, "Minutes Saved," and sentiment trends.
 
-## Expanding the ESLint configuration
+Knowledge Forge (AI Training): A RAG (Retrieval-Augmented Generation) interface where admins upload PDFs/CSVs to ground the AI in factual data.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Call Intelligence Log: Detailed transcripts, 3-sentence AI summaries, and "Manual Handoff" triggers for human intervention.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Agentic Handoff: Automated post-call triggers that send course details or brochures via WhatsApp.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+🛠️ Tech Stack
+Frontend
+Framework: React 18 (Vite) — For high-speed performance and modern DX.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Styling: Tailwind CSS — Utility-first CSS for complex Glassmorphic UI.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Icons: Lucide-React — Clean, minimal vector iconography.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Routing: React Router 6.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Backend (Spring Boot)
+Architecture: Multi-tenant Shared Database with Discriminator Columns.
+
+Security: Spring Security + JWT (JSON Web Tokens) for secure, tenant-isolated sessions.
+
+Data: Spring Data JPA + PostgreSQL.
+
+Integrations: Planned support for Twilio (Voice) and Meta Graph API (WhatsApp).
+
+🏗️ Technical Architecture
+SoviaAI is built with Multi-tenant Isolation at its core.
+
+Identity Management: Each request is filtered by a tenantId extracted from the JWT.
+
+Data Privacy: The Spring Boot backend uses logic-level filtering to ensure Company A can never access Company B’s call logs or knowledge base.
+
+Agentic Logic: The system doesn't just "talk"; it performs actions (sending messages, updating CRM statuses) based on call outcomes.
