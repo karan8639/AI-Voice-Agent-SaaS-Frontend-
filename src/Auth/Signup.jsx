@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { Mic2, Mail, Lock, User, Globe, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Mic2, Mail, Lock, User, Globe, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { authService } from '../api/services';
+import { useAuth } from '../context/AuthContext';
+import { useGoogleLogin } from '@react-oauth/google';
+import toast from 'react-hot-toast';
 
 /* ─────────────────────────────────────────────
    Glassmorphism card wrapper
@@ -18,12 +22,51 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [workspace, setWorkspace] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
   const navigate = useNavigate();
+  const { loginWithGoogle } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/dashboard');
+    setFormError('');
+    setLoading(true);
+    try {
+      const res = await authService.register({ name, email, password, workspace });
+      if (res.data?.token) {
+        localStorage.setItem('jwt_token', res.data.token);
+      }
+      toast.success('Account created! Please sign in.');
+      navigate('/login');
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 409) {
+        setFormError('An account with this email already exists.');
+      } else if (status === 401 || status === 403) {
+        setFormError('Invalid Credentials.');
+      } else {
+        setFormError(err?.message || 'Registration failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      setFormError('');
+      try {
+        await loginWithGoogle(tokenResponse.access_token);
+        navigate('/dashboard');
+      } catch (err) {
+        setFormError(err?.message || 'Google Sign-Up failed. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => setFormError('Google Sign-Up was unsuccessful.'),
+  });
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden text-white font-sans">
@@ -144,6 +187,7 @@ export default function Signup() {
         {/* Google Sign In */}
         <button
           type="button"
+          onClick={() => googleLogin()}
           className="flex items-center justify-center gap-3 w-full py-3 rounded-xl text-sm font-medium text-white/80
                      bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white
                      transition-all duration-200"
@@ -159,11 +203,18 @@ export default function Signup() {
           Sign up with Google
         </button>
 
+        {formError && (
+          <div className="mt-4 flex items-start gap-2.5 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-400">
+            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <span>{formError}</span>
+          </div>
+        )}
+
         <p className="text-center text-xs text-white/40 mt-6">
           Already have an account?{' '}
-          <button onClick={() => navigate('/login')} className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
+          <Link to="/login" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
             Log in
-          </button>
+          </Link>
         </p>
 
       </GlassCard>

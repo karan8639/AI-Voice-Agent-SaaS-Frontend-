@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useCallStream } from './hooks/useCallStream';
+import { auditService } from './api/services';
 import {
   PhoneCall,
   Search,
@@ -178,10 +180,51 @@ export default function CallIntelligence() {
   const [expandedId, setExpandedId] = useState(null);
   const [page, setPage]             = useState(1);
   const [handoffLog, setHandoffLog] = useState([]);
+  const [calls, setCalls]           = useState(MOCK_CALLS);
+  const [newCallIds, setNewCallIds] = useState(new Set());
+
+  // Handle incoming real-time call updates
+  const handleNewCall = useCallback((newCall) => {
+    setCalls(prev => [newCall, ...prev]);
+    
+    // Highlight the new row
+    setNewCallIds(prev => {
+      const next = new Set(prev);
+      next.add(newCall.id);
+      return next;
+    });
+    
+    // Remove highlight after 3 seconds
+    setTimeout(() => {
+      setNewCallIds(prev => {
+        const next = new Set(prev);
+        next.delete(newCall.id);
+        return next;
+      });
+    }, 3000);
+  }, []);
+
+  // Use the custom hook for SSE streaming
+  const { isConnected: isSyncing } = useCallStream(handleNewCall);
+
+  useEffect(() => {
+    // Initial fetch of historical logs from backend
+    const fetchLogs = async () => {
+      try {
+        const response = await auditService.getLogs();
+        if (response.data && response.data.length > 0) {
+          setCalls(response.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch initial audit logs:", err);
+      }
+    };
+    fetchLogs();
+  }, []);
 
   /* ── Filtering + sorting ── */
   const filtered = useMemo(() => {
-    let rows = MOCK_CALLS;
+    let rows = calls;
     if (statusFilter !== 'all') rows = rows.filter((r) => r.status === statusFilter);
     if (query.trim()) {
       const q = query.toLowerCase();
@@ -219,11 +262,11 @@ export default function CallIntelligence() {
 
   /* ── Status filter tabs ── */
   const STATUS_TABS = [
-    { key: 'all',      label: 'All',          count: MOCK_CALLS.length },
-    { key: 'lead',     label: 'Leads',        count: MOCK_CALLS.filter(c => c.status === 'lead').length },
-    { key: 'followup', label: 'Follow-up',    count: MOCK_CALLS.filter(c => c.status === 'followup').length },
-    { key: 'resolved', label: 'Resolved',     count: MOCK_CALLS.filter(c => c.status === 'resolved').length },
-    { key: 'missed',   label: 'Missed',       count: MOCK_CALLS.filter(c => c.status === 'missed').length },
+    { key: 'all',      label: 'All',          count: calls.length },
+    { key: 'lead',     label: 'Leads',        count: calls.filter(c => c.status === 'lead').length },
+    { key: 'followup', label: 'Follow-up',    count: calls.filter(c => c.status === 'followup').length },
+    { key: 'resolved', label: 'Resolved',     count: calls.filter(c => c.status === 'resolved').length },
+    { key: 'missed',   label: 'Missed',       count: calls.filter(c => c.status === 'missed').length },
   ];
 
   return (
@@ -232,11 +275,19 @@ export default function CallIntelligence() {
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <PhoneCall size={20} className="text-cyan-400" strokeWidth={2} />
-            Call Intelligence
-          </h1>
-          <p className="text-sm text-white/35 mt-0.5">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              <PhoneCall size={20} className="text-cyan-400" strokeWidth={2} />
+              Call Intelligence
+            </h1>
+            {isSyncing && (
+              <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-semibold text-cyan-400 bg-cyan-900/30 border border-cyan-500/30 px-2.5 py-1 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                Syncing with AI...
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-white/35 mt-1">
             Review, filter, and act on every AI-handled call
           </p>
         </div>
@@ -331,6 +382,7 @@ export default function CallIntelligence() {
 
               {pageRows.map((call) => {
                 const isExpanded = expandedId === call.id;
+                const isNew = newCallIds.has(call.id);
                 return (
                   <React.Fragment key={call.id}>
                     <tr
@@ -338,10 +390,12 @@ export default function CallIntelligence() {
                       id={`call-row-${call.id}`}
                       onClick={() => setExpandedId(isExpanded ? null : call.id)}
                       className={`
-                        border-b border-white/[0.04] cursor-pointer
-                        transition-colors duration-150
+                        cursor-pointer transition-all duration-500 group
                         ${isExpanded ? 'bg-white/[0.05]' : 'hover:bg-white/5'}
-                        group
+                        ${isNew 
+                          ? 'bg-cyan-900/20 shadow-[0_0_15px_rgba(34,211,238,0.15)] border-b border-cyan-400/50' 
+                          : 'border-b border-white/[0.04]'
+                        }
                       `}
                     >
                       {/* Date */}
@@ -356,6 +410,11 @@ export default function CallIntelligence() {
                             <PhoneCall size={12} className="text-cyan-400" strokeWidth={1.8} />
                           </div>
                           <span className="text-xs text-white/70 font-medium">{call.caller}</span>
+                          {isNew && (
+                            <span className="text-[9px] uppercase tracking-wider font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 px-1.5 py-0.5 rounded shadow-[0_0_8px_rgba(34,211,238,0.5)] animate-pulse">
+                              New
+                            </span>
+                          )}
                         </div>
                       </td>
 

@@ -11,7 +11,10 @@ import {
   Bell,
   Search,
   Users,
+  LogOut,
+  Bot,
 } from 'lucide-react';
+import { useAuth } from './context/AuthContext';
 
 /* ─────────────────────────────────────────────
    Nav link data
@@ -36,6 +39,12 @@ const NAV_LINKS = [
     badge: '12',
   },
   {
+    path: '/dashboard/agents',
+    label: 'AI Agents',
+    icon: Bot,
+    badge: null,
+  },
+  {
     path: '/dashboard/team',
     label: 'Team',
     icon: Users,
@@ -53,6 +62,18 @@ const NAV_LINKS = [
    Sidebar
 ───────────────────────────────────────────── */
 function Sidebar({ collapsed, onToggleCollapse }) {
+  const { user, logout } = useAuth();
+
+  // Derive display info from the decoded JWT payload
+  const displayName = user?.name || user?.sub || 'User';
+  const displayEmail = user?.email || '';
+  const initials = displayName
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
   return (
     <aside
       className={`
@@ -150,37 +171,54 @@ function Sidebar({ collapsed, onToggleCollapse }) {
         })}
       </nav>
 
-      {/* User profile */}
-      <div className="flex-shrink-0 border-t border-white/10 p-3">
+      {/* User profile + Logout */}
+      <div className="flex-shrink-0 border-t border-white/10 p-3 space-y-1.5">
+        {/* Profile card */}
         <div
           className={`
             flex items-center gap-3 rounded-xl p-2.5
             bg-white/[0.04] border border-white/[0.08]
-            hover:bg-white/[0.07] transition-colors cursor-pointer
             ${collapsed ? 'justify-center' : ''}
           `}
         >
           {/* Avatar */}
           <div className="relative flex-shrink-0">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-blue-600 flex items-center justify-center text-xs font-bold text-white">
-              A
+              {initials || 'U'}
             </div>
-            {/* Status dot */}
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-950 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
           </div>
 
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-white/90 truncate leading-tight">
-                Admin
+                {displayName}
               </p>
-              <p className="text-[10px] text-emerald-400 font-medium leading-tight flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                Online
-              </p>
+              {displayEmail && (
+                <p className="text-[10px] text-white/40 truncate leading-tight mt-0.5">
+                  {displayEmail}
+                </p>
+              )}
             </div>
           )}
         </div>
+
+        {/* Logout button */}
+        <button
+          id="sidebar-logout-btn"
+          onClick={logout}
+          title="Sign out"
+          className={`
+            w-full flex items-center gap-2.5 rounded-xl px-3 py-2
+            text-xs font-medium text-white/40
+            hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20
+            border border-transparent transition-all duration-200
+            ${collapsed ? 'justify-center px-0' : ''}
+          `}
+        >
+          <LogOut size={14} strokeWidth={2} className="flex-shrink-0" />
+          {!collapsed && <span>Sign out</span>}
+        </button>
       </div>
 
       {/* Collapse toggle button */}
