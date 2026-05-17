@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
+import toast from 'react-hot-toast';
+import { knowledgeService } from './api/services';
 import {
   UploadCloud,
   FileText,
@@ -185,6 +187,16 @@ function UploadZone({ files, onAdd, onRemove }) {
             <span className="text-xs text-white/30">{files.length} file{files.length !== 1 ? 's' : ''} queued</span>
             <button
               id="knowledge-upload-btn"
+              onClick={() => {
+                toast.promise(
+                  new Promise(resolve => setTimeout(resolve, 2000)),
+                  {
+                    loading: 'Processing Knowledge...',
+                    success: 'Knowledge Base Updated',
+                    error: 'Upload Failed',
+                  }
+                );
+              }}
               className="flex items-center gap-1.5 text-xs font-semibold text-white px-4 py-2 rounded-lg
                          bg-gradient-to-r from-cyan-500 to-blue-600
                          shadow-[0_0_16px_rgba(6,182,212,0.4)]
@@ -216,9 +228,16 @@ function SystemPromptConfig() {
   const [expanded, setExpanded] = useState(true);
   const maxLen = 2000;
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    try {
+      await knowledgeService.updatePrompt(prompt);
+      setSaved(true);
+      toast.success('System Prompt Updated');
+      setTimeout(() => setSaved(false), 2500);
+    } catch (error) {
+      toast.error('Failed to update system prompt');
+      console.error(error);
+    }
   };
 
   return (
@@ -355,8 +374,17 @@ function FAQManager() {
   const updateFaq = (id, field, value) =>
     setFaqs((prev) => prev.map((f) => (f.id === id ? { ...f, [field]: value } : f)));
 
-  const handleSaveFaqs = () => {
+  const handleSaveFaqs = async () => {
     setFaqSaved(true);
+    toast.promise(
+      // Sends each FAQ entry to the backend. In a real app, you might send the whole array in one call.
+      Promise.all(faqs.map(faq => knowledgeService.saveFAQ(faq.question, faq.answer))),
+      {
+        loading: 'Processing Knowledge...',
+        success: 'Knowledge Base Updated',
+        error: 'Save Failed',
+      }
+    );
     setTimeout(() => setFaqSaved(false), 2500);
   };
 

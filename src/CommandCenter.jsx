@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { dashboardService } from './api/services';
 import {
   PhoneIncoming,
   UserCheck,
@@ -278,7 +279,37 @@ const ACTIVITY = [
 ───────────────────────────────────────────── */
 export default function CommandCenter() {
   const [chartRange, setChartRange] = useState('24h');
+  const [stats, setStats] = useState({
+    totalCalls: "24,831",
+    successfulLeads: "3,492",
+    hoursSaved: "9,200",
+    deltas: { calls: 12, leads: 38, hours: -3 }
+  });
+
   const ranges = ['1h', '24h', '7d', '30d'];
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await dashboardService.getStats();
+        if (response.data) {
+          setStats({
+            totalCalls: response.data.totalCalls?.toLocaleString() || "0",
+            successfulLeads: response.data.successfulLeads?.toLocaleString() || "0",
+            hoursSaved: response.data.minutesSaved ? (response.data.minutesSaved / 60).toFixed(0).toLocaleString() : "0",
+            deltas: { 
+              calls: response.data.deltaCalls || 0, 
+              leads: response.data.deltaLeads || 0, 
+              hours: response.data.deltaHours || 0 
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch dashboard stats:", err);
+      }
+    };
+    fetchStats();
+  }, []);
 
   return (
     <div className="flex flex-col gap-6 h-full">
@@ -320,9 +351,9 @@ export default function CommandCenter() {
           id="stat-total-calls"
           icon={PhoneIncoming}
           label="Total Calls Handled"
-          value="24,831"
+          value={stats.totalCalls}
           unit="calls"
-          delta={12}
+          delta={stats.deltas.calls}
           deltaLabel="vs. last 30 days"
           accentClass="bg-cyan-500/10 border-cyan-400/20 text-cyan-400"
           glowClass="bg-cyan-500/20"
@@ -331,9 +362,9 @@ export default function CommandCenter() {
           id="stat-successful-leads"
           icon={UserCheck}
           label="Successful Leads"
-          value="3,492"
+          value={stats.successfulLeads}
           unit="leads"
-          delta={38}
+          delta={stats.deltas.leads}
           deltaLabel="vs. last 30 days"
           accentClass="bg-emerald-500/10 border-emerald-400/20 text-emerald-400"
           glowClass="bg-emerald-500/20"
@@ -342,9 +373,9 @@ export default function CommandCenter() {
           id="stat-hours-saved"
           icon={Clock4}
           label="Staff Hours Saved"
-          value="9,200"
+          value={stats.hoursSaved}
           unit="hrs"
-          delta={-3}
+          delta={stats.deltas.hours}
           deltaLabel="vs. last 30 days"
           accentClass="bg-violet-500/10 border-violet-400/20 text-violet-400"
           glowClass="bg-violet-500/20"
